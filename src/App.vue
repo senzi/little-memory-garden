@@ -17,6 +17,7 @@ const currentQuestion = ref(null)
 const currentQuestionIndex = ref(null)
 const selectedOption = ref(null)
 const isCorrect = ref(false)
+const imageLoaded = ref(false)
 const countdown = ref(OBSERVE_SECONDS)
 const totalScore = ref(0)
 const correctCount = ref(0)
@@ -232,15 +233,34 @@ const startObserve = () => {
   clearTimers()
   countdown.value = OBSERVE_SECONDS
   state.value = 'observe'
-  countdownTimer = setInterval(() => {
-    if (countdown.value > 1) {
-      countdown.value -= 1
+  imageLoaded.value = false
+  const src = currentEntry.value?.image
+  const startTimers = () => {
+    if (state.value !== 'observe') return
+    countdownTimer = setInterval(() => {
+      if (countdown.value > 1) {
+        countdown.value -= 1
+      }
+    }, 1000)
+    observeTimer = setTimeout(() => {
+      clearTimers()
+      state.value = 'quiz'
+    }, OBSERVE_SECONDS * 1000)
+  }
+  if (src) {
+    const img = new Image()
+    img.onload = () => {
+      imageLoaded.value = true
+      startTimers()
     }
-  }, 1000)
-  observeTimer = setTimeout(() => {
-    clearTimers()
-    state.value = 'quiz'
-  }, OBSERVE_SECONDS * 1000)
+    img.onerror = () => {
+      imageLoaded.value = true
+      startTimers()
+    }
+    img.src = src
+  } else {
+    startTimers()
+  }
 }
 
 const chooseOption = (index) => {
@@ -409,7 +429,7 @@ onBeforeUnmount(() => {
         <div class="image-frame small">
           <img :src="currentEntry.image" :alt="currentEntry.description || '观察图片'" />
         </div>
-        <h2>{{ feedbackText }}</h2>
+        <h2 :class="['feedback-text', isCorrect ? 'good' : 'bad']">{{ feedbackText }}</h2>
         <p>正确答案：{{ answerText }}</p>
         <p>本轮得分：{{ roundScores[currentRoundIndex] || 0 }}</p>
         <button class="primary" @click="nextStep">

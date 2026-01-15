@@ -275,6 +275,14 @@ button {
   color: #7a6e64;
 }
 
+.feedback-text.good {
+  color: #2f8b57;
+}
+
+.feedback-text.bad {
+  color: #c26b6b;
+}
+
 .options {
   display: grid;
   gap: 12px;
