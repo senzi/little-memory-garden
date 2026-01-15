@@ -292,6 +292,11 @@ button {
   color: var(--muted);
 }
 
+.cache-note {
+  font-size: 0.75rem;
+  color: #8d7d73;
+}
+
 .cache-bar {
   width: 120px;
   height: 6px;

@@ -7,6 +7,7 @@ const OBSERVE_SECONDS = 8
 const DATA_PATH = '/data/questions.jsonl'
 const STATS_KEY = 'lmg_stats_v1'
 const USED_QUESTIONS_KEY = 'lmg_used_questions_v1'
+const CACHED_IMAGES_KEY = 'lmg_cached_images_v1'
 
 const state = ref('loading')
 const errorMessage = ref('')
@@ -30,6 +31,9 @@ const preload = ref({
   total: 0,
   label: '',
 })
+const cachedImages = ref([])
+const cacheNotice = ref('')
+let cacheNoticeTimer = null
 const stats = ref({
   totalGames: 0,
   totalCorrect: 0,
@@ -63,6 +67,15 @@ const overallAccuracy = computed(() => {
 const preloadPercent = computed(() => {
   if (!preload.value.total) return 0
   return Math.min(100, Math.round((preload.value.current / preload.value.total) * 100))
+})
+const currentImages = computed(() =>
+  bank.value.map((entry) => entry.image).filter(Boolean)
+)
+const cachedAll = computed(() => {
+  if (!currentImages.value.length) return false
+  if (!cachedImages.value.length) return false
+  const cachedSet = new Set(cachedImages.value)
+  return currentImages.value.every((image) => cachedSet.has(image))
 })
 const bankImageCount = computed(() => bank.value.length)
 const bankQuestionCount = computed(() =>
@@ -343,14 +356,24 @@ const backToStart = () => {
 
 const startCacheAll = async () => {
   if (!bank.value.length) return
+  if (cachedAll.value) {
+    cacheNotice.value = '已缓存'
+    if (cacheNoticeTimer) clearTimeout(cacheNoticeTimer)
+    cacheNoticeTimer = setTimeout(() => {
+      cacheNotice.value = ''
+    }, 2000)
+    return
+  }
   preload.value = { active: true, current: 0, total: 0, label: '正在缓存全部素材' }
   await preloadImages(
-    bank.value.map((entry) => entry.image),
+    currentImages.value,
     (current, total) => {
       preload.value = { ...preload.value, current, total }
     }
   )
   preload.value = { ...preload.value, active: false }
+  cachedImages.value = [...currentImages.value]
+  localStorage.setItem(CACHED_IMAGES_KEY, JSON.stringify(cachedImages.value))
 }
 
 onMounted(() => {
@@ -364,12 +387,22 @@ onMounted(() => {
   } catch (err) {
     usedQuestions.value = {}
   }
+  try {
+    const raw = localStorage.getItem(CACHED_IMAGES_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      cachedImages.value = Array.isArray(parsed) ? parsed : []
+    }
+  } catch (err) {
+    cachedImages.value = []
+  }
   loadBank()
 })
 
 onBeforeUnmount(() => {
   clearTimers()
   document.body.style.overflow = ''
+  if (cacheNoticeTimer) clearTimeout(cacheNoticeTimer)
 })
 
 watch(state, (next) => {
@@ -383,6 +416,7 @@ watch(state, (next) => {
       <div class="brand">记忆小花园</div>
       <div class="tag-wrap">
         <button class="tag" type="button" @click="startCacheAll">离线专注训练</button>
+        <span v-if="cacheNotice" class="cache-note">{{ cacheNotice }}</span>
         <div v-if="preload.active && preload.label === '正在缓存全部素材'" class="cache-inline">
           <div class="cache-bar">
             <span :style="{ width: `${preloadPercent}%` }"></span>
