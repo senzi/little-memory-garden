@@ -6,6 +6,7 @@ const TOTAL_ROUNDS = 5
 const OBSERVE_SECONDS = 8
 const DATA_PATH = '/data/questions.jsonl'
 const STATS_KEY = 'lmg_stats_v1'
+const USED_QUESTIONS_KEY = 'lmg_used_questions_v1'
 
 const state = ref('loading')
 const errorMessage = ref('')
@@ -13,6 +14,7 @@ const bank = ref([])
 const rounds = ref([])
 const currentRoundIndex = ref(0)
 const currentQuestion = ref(null)
+const currentQuestionIndex = ref(null)
 const selectedOption = ref(null)
 const isCorrect = ref(false)
 const countdown = ref(OBSERVE_SECONDS)
@@ -20,6 +22,7 @@ const totalScore = ref(0)
 const correctCount = ref(0)
 const roundScores = ref([])
 const totalPossible = ref(0)
+const usedQuestions = ref({})
 const stats = ref({
   totalGames: 0,
   totalCorrect: 0,
@@ -157,6 +160,8 @@ const clearStats = () => {
     gameHistory: [],
   }
   localStorage.removeItem(STATS_KEY)
+  usedQuestions.value = {}
+  localStorage.removeItem(USED_QUESTIONS_KEY)
 }
 
 const loadBank = async () => {
@@ -188,8 +193,20 @@ const buildRounds = () => {
 const prepareRound = () => {
   const entry = currentEntry.value
   if (!entry) return
-  const question = shuffle(entry.questions)[0]
-  currentQuestion.value = question
+  const key = entry.image || `entry-${currentRoundIndex.value}`
+  const used = usedQuestions.value[key] || []
+  const available = entry.questions
+    .map((question, index) => ({ question, index }))
+    .filter((item) => !used.includes(item.index))
+  const pool = available.length ? available : entry.questions.map((question, index) => ({ question, index }))
+  const chosen = shuffle(pool)[0]
+  if (!available.length) {
+    usedQuestions.value[key] = []
+  }
+  usedQuestions.value[key] = [...(usedQuestions.value[key] || []), chosen.index]
+  localStorage.setItem(USED_QUESTIONS_KEY, JSON.stringify(usedQuestions.value))
+  currentQuestion.value = chosen.question
+  currentQuestionIndex.value = chosen.index
   selectedOption.value = null
   isCorrect.value = false
 }
@@ -202,6 +219,7 @@ const startGame = () => {
   correctCount.value = 0
   roundScores.value = []
   totalPossible.value = 0
+  usedQuestions.value = {}
   prepareRound()
   state.value = 'ready'
 }
@@ -258,6 +276,15 @@ const backToStart = () => {
 
 onMounted(() => {
   loadStats()
+  try {
+    const raw = localStorage.getItem(USED_QUESTIONS_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      usedQuestions.value = parsed && typeof parsed === 'object' ? parsed : {}
+    }
+  } catch (err) {
+    usedQuestions.value = {}
+  }
   loadBank()
 })
 
