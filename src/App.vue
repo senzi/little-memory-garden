@@ -1,5 +1,6 @@
 ﻿<script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import HistoryPanel from './components/HistoryPanel.vue'
 
 const TOTAL_ROUNDS = 5
 const OBSERVE_SECONDS = 8
@@ -18,11 +19,13 @@ const countdown = ref(OBSERVE_SECONDS)
 const totalScore = ref(0)
 const correctCount = ref(0)
 const roundScores = ref([])
+const totalPossible = ref(0)
 const stats = ref({
   totalGames: 0,
   totalCorrect: 0,
   totalQuestions: 0,
   totalScore: 0,
+  totalPossible: 0,
 })
 
 let countdownTimer = null
@@ -107,9 +110,10 @@ const loadStats = () => {
       totalCorrect: Number(parsed.totalCorrect) || 0,
       totalQuestions: Number(parsed.totalQuestions) || 0,
       totalScore: Number(parsed.totalScore) || 0,
+      totalPossible: Number(parsed.totalPossible) || 0,
     }
   } catch (err) {
-    stats.value = { totalGames: 0, totalCorrect: 0, totalQuestions: 0, totalScore: 0 }
+    stats.value = { totalGames: 0, totalCorrect: 0, totalQuestions: 0, totalScore: 0, totalPossible: 0 }
   }
 }
 
@@ -122,11 +126,12 @@ const updateStats = () => {
   stats.value.totalCorrect += correctCount.value
   stats.value.totalQuestions += TOTAL_ROUNDS
   stats.value.totalScore += totalScore.value
+  stats.value.totalPossible += totalPossible.value
   saveStats()
 }
 
 const clearStats = () => {
-  stats.value = { totalGames: 0, totalCorrect: 0, totalQuestions: 0, totalScore: 0 }
+  stats.value = { totalGames: 0, totalCorrect: 0, totalQuestions: 0, totalScore: 0, totalPossible: 0 }
   localStorage.removeItem(STATS_KEY)
 }
 
@@ -172,6 +177,7 @@ const startGame = () => {
   totalScore.value = 0
   correctCount.value = 0
   roundScores.value = []
+  totalPossible.value = 0
   prepareRound()
   state.value = 'ready'
 }
@@ -198,6 +204,7 @@ const chooseOption = (index) => {
   const score = isCorrect.value ? Number(currentQuestion.value.difficulty) : 0
   roundScores.value[currentRoundIndex.value] = score
   totalScore.value += score
+  totalPossible.value += Number(currentQuestion.value.difficulty)
   if (isCorrect.value) correctCount.value += 1
   state.value = 'feedback'
 }
@@ -215,6 +222,14 @@ const nextStep = () => {
 
 const restartGame = () => {
   startGame()
+}
+
+const openHistory = () => {
+  state.value = 'history'
+}
+
+const backToStart = () => {
+  state.value = 'start'
 }
 
 onMounted(() => {
@@ -282,7 +297,10 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </div>
-        <button class="primary" @click="startGame">开始游戏</button>
+        <div class="actions">
+          <button class="primary" @click="startGame">开始游戏</button>
+          <button class="ghost" @click="openHistory">查看记录</button>
+        </div>
       </section>
 
       <section v-else-if="state === 'ready'" class="section fade">
@@ -333,6 +351,9 @@ onBeforeUnmount(() => {
         <div class="round-head">
           <p class="round-label">{{ roundNumberLabel }}</p>
         </div>
+        <div class="image-frame small">
+          <img :src="currentEntry.image" :alt="currentEntry.description || '观察图片'" />
+        </div>
         <h2>{{ feedbackText }}</h2>
         <p>正确答案：{{ answerText }}</p>
         <p>本轮得分：{{ roundScores[currentRoundIndex] || 0 }}</p>
@@ -369,15 +390,23 @@ onBeforeUnmount(() => {
               <strong>{{ overallAccuracy }}</strong>
             </div>
             <div>
-              <p>累计总得分</p>
-              <strong>{{ stats.totalScore }}</strong>
+              <p>累计得分占比</p>
+              <strong>{{ stats.totalPossible ? Math.round((stats.totalScore / stats.totalPossible) * 100) : 0 }}%</strong>
             </div>
           </div>
         </div>
         <div class="actions">
           <button class="primary" @click="restartGame">再来一局</button>
-          <button class="ghost" @click="clearStats">清空记录</button>
+          <button class="ghost" @click="openHistory">查看记录</button>
         </div>
+      </section>
+
+      <section v-else-if="state === 'history'" class="section history">
+        <HistoryPanel
+          :stats="stats"
+          @back="backToStart"
+          @clear="clearStats"
+        />
       </section>
     </main>
 
