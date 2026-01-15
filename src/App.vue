@@ -436,6 +436,13 @@ onBeforeUnmount(() => {
 
     <footer class="foot">
       <p>温柔观察 · 慢慢记住 · 每一轮都在进步</p>
+      <div class="foot-links">
+        <a href="https://github.com/senzi/little-memory-garden" target="_blank" rel="noopener">Github</a>
+        <span>·</span>
+        <a href="https://github.com/senzi/little-memory-garden?tab=MIT-1-ov-file" target="_blank" rel="noopener">MIT</a>
+        <span>·</span>
+        <span>Vibecoding</span>
+      </div>
     </footer>
   </div>
 </template>
