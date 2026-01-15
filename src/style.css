@@ -339,6 +339,24 @@ button {
   font-family: var(--title-font);
 }
 
+.history-bank {
+  background: #f3f9ff;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 10px 18px var(--shadow);
+  text-align: left;
+}
+
+.history-bank h2 {
+  margin: 0 0 8px;
+  font-family: var(--title-font);
+}
+
+.history-bank p {
+  margin: 0;
+  color: var(--muted);
+}
+
 .history-rows {
   display: grid;
   gap: 10px;

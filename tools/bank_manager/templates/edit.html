@@ -56,7 +56,6 @@
 
           <div class="question-head">
             <h2>题目列表</h2>
-            <button class="ghost" type="button" id="add-question">新增题目</button>
           </div>
 
           <input type="hidden" name="question_count" id="question-count" value="{{ questions|length if questions else 1 }}" />
@@ -116,6 +115,8 @@
               </div>
             {% endif %}
           </div>
+
+          <button class="ghost add-question" type="button" id="add-question">新增题目</button>
 
           <button class="primary" type="submit">保存更新</button>
         </form>

@@ -108,6 +108,12 @@ p {
   grid-template-columns: minmax(220px, 1fr) minmax(320px, 2fr);
 }
 
+.preview {
+  position: sticky;
+  top: 20px;
+  align-self: start;
+}
+
 .form {
   display: grid;
   gap: 16px;
@@ -118,6 +124,11 @@ p {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+.add-question {
+  align-self: flex-start;
+  width: fit-content;
 }
 
 .question-list {

@@ -6,6 +6,14 @@ defineProps({
     type: Object,
     required: true,
   },
+  bankImageCount: {
+    type: Number,
+    required: true,
+  },
+  bankQuestionCount: {
+    type: Number,
+    required: true,
+  },
 })
 
 const emit = defineEmits(['back', 'clear'])
@@ -69,6 +77,10 @@ const confirmClearAction = () => {
           <span>正确 {{ item.correct }} / {{ item.total }}</span>
         </div>
       </div>
+    </div>
+    <div class="history-bank">
+      <h2>题库统计</h2>
+      <p>共有 {{ bankImageCount }} 张图片，合计 {{ bankQuestionCount }} 道题目。</p>
     </div>
     <div class="actions">
       <button class="primary" @click="emit('back')">返回开始</button>

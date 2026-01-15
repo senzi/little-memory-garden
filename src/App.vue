@@ -53,6 +53,10 @@ const overallAccuracy = computed(() => {
   const rate = (stats.value.totalCorrect / stats.value.totalQuestions) * 100
   return `${Math.round(rate)}%`
 })
+const bankImageCount = computed(() => bank.value.length)
+const bankQuestionCount = computed(() =>
+  bank.value.reduce((sum, entry) => sum + (entry.questions ? entry.questions.length : 0), 0)
+)
 
 const clearTimers = () => {
   if (countdownTimer) {
@@ -455,6 +459,8 @@ onBeforeUnmount(() => {
       <section v-else-if="state === 'history'" class="section history">
         <HistoryPanel
           :stats="stats"
+          :bank-image-count="bankImageCount"
+          :bank-question-count="bankQuestionCount"
           @back="backToStart"
           @clear="clearStats"
         />
