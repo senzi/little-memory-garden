@@ -10,7 +10,7 @@
     <header class="top">
       <div>
         <h1>编辑条目 {{ index + 1 }}</h1>
-        <p>请按 json 结构填写题目内容。</p>
+        <p>填写题目表单，保存后自动写入 jsonl。</p>
       </div>
       <a class="link" href="{{ url_for('index') }}">返回列表</a>
     </header>
@@ -19,13 +19,10 @@
       <section class="preview">
         <h2>图片预览</h2>
         <div class="thumb large">
-          {% if image_url %}
-          <img src="{{ image_url }}" alt="预览图片" />
-          {% else %}
-          <span>暂无图片</span>
-          {% endif %}
+          <img src="{{ image_url }}" alt="预览图片" {% if not image_url %}style="display: none;"{% endif %} />
+          <span {% if image_url %}style="display: none;"{% endif %}>暂无图片</span>
         </div>
-        <p class="note">图片路径写在前端目录 `public` 下，例如 `/images/xxx.png`。</p>
+        <p class="note">图片从 `public/images` 自动读取，下拉选择即可预览。</p>
       </section>
 
       <section class="form">
@@ -40,22 +37,183 @@
         </div>
         {% endif %}
 
-        <form method="post">
+        <form method="post" id="entry-form">
           <label>
-            图片路径
-            <input type="text" name="image" value="{{ entry.image }}" placeholder="/images/xxx.png" />
+            图片选择
+            <select name="image" id="image-select">
+              {% if entry.image and entry.image not in images %}
+              <option value="{{ entry.image }}">{{ entry.image }}</option>
+              {% endif %}
+              {% for image in images %}
+              <option value="{{ image }}" data-preview="{{ url_for('public_file', filename=image.lstrip('/')) }}" {% if image == entry.image %}selected{% endif %}>{{ image }}</option>
+              {% endfor %}
+            </select>
           </label>
           <label>
             描述（仅内部使用）
             <input type="text" name="description" value="{{ entry.description }}" placeholder="例如：春天的花园" />
           </label>
-          <label>
-            题目 JSON
-            <textarea name="questions" rows="16">{{ questions }}</textarea>
-          </label>
+
+          <div class="question-head">
+            <h2>题目列表</h2>
+            <button class="ghost" type="button" id="add-question">新增题目</button>
+          </div>
+
+          <input type="hidden" name="question_count" id="question-count" value="{{ questions|length if questions else 1 }}" />
+
+          <div class="question-list" id="question-list">
+            {% if questions %}
+              {% for question in questions %}
+              <div class="question-card" data-index="{{ loop.index0 }}">
+                <div class="question-title">
+                  <strong>题目 {{ loop.index }}</strong>
+                  <button class="ghost" type="button" data-remove>删除</button>
+                </div>
+                <label>
+                  题目文本
+                  <input type="text" name="q-{{ loop.index0 }}-text" data-field="text" value="{{ question.text }}" placeholder="例如：图里有几个星星？" />
+                </label>
+                <label>
+                  选项（每行一个）
+                  <textarea name="q-{{ loop.index0 }}-options" data-field="options" rows="4">{% for option in question.options %}{{ option }}{% if not loop.last %}&#10;{% endif %}{% endfor %}</textarea>
+                </label>
+                <div class="row">
+                  <label>
+                    正确答案（填写选项文字）
+                    <input type="text" name="q-{{ loop.index0 }}-answer" data-field="answer" value="{% if question.answer is not none and question.answer < (question.options|length) %}{{ question.options[question.answer] }}{% endif %}" placeholder="例如：3只" />
+                  </label>
+                  <label>
+                    难度分
+                    <input type="number" name="q-{{ loop.index0 }}-difficulty" data-field="difficulty" value="{{ question.difficulty }}" min="0" step="1" />
+                  </label>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="question-card" data-index="0">
+                <div class="question-title">
+                  <strong>题目 1</strong>
+                  <button class="ghost" type="button" data-remove>删除</button>
+                </div>
+                <label>
+                  题目文本
+                  <input type="text" name="q-0-text" data-field="text" placeholder="例如：图里有几个星星？" />
+                </label>
+                <label>
+                  选项（每行一个）
+                  <textarea name="q-0-options" data-field="options" rows="4"></textarea>
+                </label>
+                <div class="row">
+                  <label>
+                    正确答案（填写选项文字）
+                    <input type="text" name="q-0-answer" data-field="answer" placeholder="例如：3只" />
+                  </label>
+                  <label>
+                    难度分
+                    <input type="number" name="q-0-difficulty" data-field="difficulty" min="0" step="1" />
+                  </label>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
           <button class="primary" type="submit">保存更新</button>
         </form>
       </section>
     </main>
+
+    <template id="question-template">
+      <div class="question-card" data-index="__INDEX__">
+        <div class="question-title">
+          <strong>题目 __NUMBER__</strong>
+          <button class="ghost" type="button" data-remove>删除</button>
+        </div>
+        <label>
+          题目文本
+          <input type="text" name="q-__INDEX__-text" data-field="text" placeholder="例如：图里有几个星星？" />
+        </label>
+        <label>
+          选项（每行一个）
+          <textarea name="q-__INDEX__-options" data-field="options" rows="4"></textarea>
+        </label>
+        <div class="row">
+          <label>
+            正确答案（填写选项文字）
+            <input type="text" name="q-__INDEX__-answer" data-field="answer" placeholder="例如：3只" />
+          </label>
+          <label>
+            难度分
+            <input type="number" name="q-__INDEX__-difficulty" data-field="difficulty" min="0" step="1" />
+          </label>
+        </div>
+      </div>
+    </template>
+
+    <script>
+      const list = document.getElementById('question-list')
+      const addButton = document.getElementById('add-question')
+      const countInput = document.getElementById('question-count')
+      const template = document.getElementById('question-template').innerHTML
+      const imageSelect = document.getElementById('image-select')
+      const preview = document.querySelector('.preview img')
+      const previewFallback = document.querySelector('.preview .thumb span')
+
+      const refreshLabels = () => {
+        const cards = list.querySelectorAll('.question-card')
+        cards.forEach((card, index) => {
+          const title = card.querySelector('.question-title strong')
+          if (title) title.textContent = `题目 ${index + 1}`
+          card.dataset.index = index
+          card.querySelectorAll('[data-field]').forEach((field) => {
+            field.name = `q-${index}-${field.dataset.field}`
+          })
+        })
+      }
+
+      const updateCount = () => {
+        countInput.value = list.querySelectorAll('.question-card').length
+      }
+
+      const handleRemove = (event) => {
+        if (!event.target.matches('[data-remove]')) return
+        const card = event.target.closest('.question-card')
+        if (card) {
+          card.remove()
+          refreshLabels()
+          updateCount()
+        }
+      }
+
+      addButton.addEventListener('click', () => {
+        const index = list.querySelectorAll('.question-card').length
+        const html = template
+          .replace(/__INDEX__/g, index)
+          .replace(/__NUMBER__/g, index + 1)
+        const wrapper = document.createElement('div')
+        wrapper.innerHTML = html
+        list.appendChild(wrapper.firstElementChild)
+        updateCount()
+      })
+
+      list.addEventListener('click', handleRemove)
+      updateCount()
+
+      if (imageSelect) {
+        imageSelect.addEventListener('change', () => {
+          const option = imageSelect.options[imageSelect.selectedIndex]
+          const src = option ? option.dataset.preview : ''
+          if (!preview || !previewFallback) return
+          if (!src) {
+            preview.removeAttribute('src')
+            preview.style.display = 'none'
+            previewFallback.style.display = 'block'
+            return
+          }
+          preview.src = src
+          preview.style.display = 'block'
+          previewFallback.style.display = 'none'
+        })
+      }
+    </script>
   </body>
 </html>

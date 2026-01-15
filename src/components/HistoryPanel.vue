@@ -1,5 +1,7 @@
 ﻿<script setup>
-const props = defineProps({
+import { ref } from 'vue'
+
+defineProps({
   stats: {
     type: Object,
     required: true,
@@ -7,9 +9,19 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['back', 'clear'])
+const confirmClear = ref(false)
 
-const handleClear = () => {
+const requestClear = () => {
+  confirmClear.value = true
+}
+
+const cancelClear = () => {
+  confirmClear.value = false
+}
+
+const confirmClearAction = () => {
   emit('clear')
+  confirmClear.value = false
 }
 </script>
 
@@ -47,9 +59,27 @@ const handleClear = () => {
         </div>
       </div>
     </div>
+    <div class="history-list">
+      <h2>单局成绩</h2>
+      <div v-if="!stats.gameHistory.length" class="history-empty">暂无记录。</div>
+      <div v-else class="history-rows">
+        <div v-for="(item, index) in stats.gameHistory" :key="item.id" class="history-row">
+          <span>第 {{ stats.totalGames - index }} 局</span>
+          <span>得分 {{ item.score }} / {{ item.possible }}</span>
+          <span>正确 {{ item.correct }} / {{ item.total }}</span>
+        </div>
+      </div>
+    </div>
     <div class="actions">
       <button class="primary" @click="emit('back')">返回开始</button>
-      <button class="ghost" @click="handleClear">清空记录</button>
+      <div class="inline-confirm">
+        <button class="ghost" @click="requestClear">清空记录</button>
+        <div v-if="confirmClear" class="confirm-box">
+          <span>确定清空？</span>
+          <button class="danger" @click="confirmClearAction">确定</button>
+          <button class="ghost" @click="cancelClear">取消</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>

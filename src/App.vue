@@ -26,6 +26,7 @@ const stats = ref({
   totalQuestions: 0,
   totalScore: 0,
   totalPossible: 0,
+  gameHistory: [],
 })
 
 let countdownTimer = null
@@ -111,9 +112,17 @@ const loadStats = () => {
       totalQuestions: Number(parsed.totalQuestions) || 0,
       totalScore: Number(parsed.totalScore) || 0,
       totalPossible: Number(parsed.totalPossible) || 0,
+      gameHistory: Array.isArray(parsed.gameHistory) ? parsed.gameHistory : [],
     }
   } catch (err) {
-    stats.value = { totalGames: 0, totalCorrect: 0, totalQuestions: 0, totalScore: 0, totalPossible: 0 }
+    stats.value = {
+      totalGames: 0,
+      totalCorrect: 0,
+      totalQuestions: 0,
+      totalScore: 0,
+      totalPossible: 0,
+      gameHistory: [],
+    }
   }
 }
 
@@ -127,11 +136,26 @@ const updateStats = () => {
   stats.value.totalQuestions += TOTAL_ROUNDS
   stats.value.totalScore += totalScore.value
   stats.value.totalPossible += totalPossible.value
+  stats.value.gameHistory.unshift({
+    id: Date.now(),
+    score: totalScore.value,
+    possible: totalPossible.value,
+    correct: correctCount.value,
+    total: TOTAL_ROUNDS,
+  })
+  stats.value.gameHistory = stats.value.gameHistory.slice(0, 20)
   saveStats()
 }
 
 const clearStats = () => {
-  stats.value = { totalGames: 0, totalCorrect: 0, totalQuestions: 0, totalScore: 0, totalPossible: 0 }
+  stats.value = {
+    totalGames: 0,
+    totalCorrect: 0,
+    totalQuestions: 0,
+    totalScore: 0,
+    totalPossible: 0,
+    gameHistory: [],
+  }
   localStorage.removeItem(STATS_KEY)
 }
 

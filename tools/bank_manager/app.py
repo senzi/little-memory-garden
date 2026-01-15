@@ -10,6 +10,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, '..', '..'))
 DATA_PATH = os.path.join(PROJECT_ROOT, 'public', 'data', 'questions.jsonl')
 PUBLIC_DIR = os.path.join(PROJECT_ROOT, 'public')
+IMAGES_DIR = os.path.join(PUBLIC_DIR, 'images')
 
 app = Flask(__name__)
 app.secret_key = 'memory-garden-local'
@@ -28,6 +29,30 @@ def load_entries() -> list[dict[str, Any]]:
         entries.append(json.loads(line))
       except json.JSONDecodeError:
         continue
+  return entries
+
+
+def get_image_paths() -> list[str]:
+  if not os.path.isdir(IMAGES_DIR):
+    return []
+  image_paths: list[str] = []
+  for root, _, files in os.walk(IMAGES_DIR):
+    for filename in files:
+      ext = os.path.splitext(filename)[1].lower()
+      if ext not in {'.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif'}:
+        continue
+      abs_path = os.path.join(root, filename)
+      rel_path = os.path.relpath(abs_path, PUBLIC_DIR)
+      image_paths.append(f'/{rel_path.replace(os.sep, "/")}')
+  return sorted(image_paths)
+
+
+def sync_entries_with_images(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+  images = get_image_paths()
+  existing = {entry.get('image') for entry in entries if entry.get('image')}
+  for image in images:
+    if image not in existing:
+      entries.append({'image': image, 'description': '', 'questions': []})
   return entries
 
 
@@ -58,13 +83,64 @@ def validate_entry(entry: dict[str, Any]) -> list[str]:
       errors.append(f'第 {idx} 题选项至少 2 个。')
     answer = question.get('answer')
     if not isinstance(answer, int):
-      errors.append(f'第 {idx} 题答案必须是数字索引。')
+      errors.append(f'第 {idx} 题正确答案不能为空，且必须在选项中。')
     elif isinstance(options, list) and (answer < 0 or answer >= len(options)):
       errors.append(f'第 {idx} 题答案索引超出范围。')
     difficulty = question.get('difficulty')
     if not isinstance(difficulty, (int, float)):
       errors.append(f'第 {idx} 题难度必须是数字。')
   return errors
+
+
+def parse_options(raw: str) -> list[str]:
+  if not raw:
+    return []
+  lines = [line.strip() for line in raw.splitlines() if line.strip()]
+  if lines:
+    return lines
+  return [part.strip() for part in raw.split(',') if part.strip()]
+
+
+def parse_questions_from_form(form: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
+  questions: list[dict[str, Any]] = []
+  errors: list[str] = []
+  try:
+    count = int(form.get('question_count', 0))
+  except (TypeError, ValueError):
+    count = 0
+
+  for idx in range(count):
+    text = form.get(f'q-{idx}-text', '').strip()
+    options_raw = form.get(f'q-{idx}-options', '')
+    options = parse_options(options_raw)
+    answer_text = form.get(f'q-{idx}-answer', '').strip()
+    difficulty_raw = form.get(f'q-{idx}-difficulty', '').strip()
+
+    if not (text or options_raw or answer_raw or difficulty_raw):
+      continue
+
+    answer = None
+    if answer_text:
+      if answer_text in options:
+        answer = options.index(answer_text)
+      else:
+        errors.append(f'第 {idx + 1} 题正确答案不在选项中。')
+
+    try:
+      difficulty = float(difficulty_raw)
+      if difficulty.is_integer():
+        difficulty = int(difficulty)
+    except (TypeError, ValueError):
+      difficulty = difficulty_raw
+
+    questions.append({
+      'text': text,
+      'options': options,
+      'answer': answer,
+      'difficulty': difficulty,
+    })
+
+  return questions, errors
 
 
 def build_image_url(image_path: str) -> str:
@@ -79,7 +155,8 @@ def public_file(filename: str):
 
 @app.route('/')
 def index():
-  entries = load_entries()
+  entries = sync_entries_with_images(load_entries())
+  save_entries(entries)
   summaries = []
   for idx, entry in enumerate(entries):
     summaries.append({
@@ -102,7 +179,8 @@ def create_entry():
 
 @app.route('/edit/<int:index>', methods=['GET', 'POST'])
 def edit_entry(index: int):
-  entries = load_entries()
+  entries = sync_entries_with_images(load_entries())
+  save_entries(entries)
   if index < 0 or index >= len(entries):
     return redirect(url_for('index'))
 
@@ -113,14 +191,10 @@ def edit_entry(index: int):
   if request.method == 'POST':
     image = request.form.get('image', '').strip()
     description = request.form.get('description', '').strip()
-    questions_raw = request.form.get('questions', '').strip()
-    try:
-      questions = json.loads(questions_raw) if questions_raw else []
-    except json.JSONDecodeError:
-      questions = []
-      errors.append('题目 JSON 解析失败，请检查格式。')
+    questions, form_errors = parse_questions_from_form(request.form)
 
     updated = {'image': image, 'description': description, 'questions': questions}
+    errors.extend(form_errors)
     errors.extend(validate_entry(updated))
 
     if not errors:
@@ -128,15 +202,16 @@ def edit_entry(index: int):
       save_entries(entries)
       entry = updated
       message = '已保存并更新题库文件。'
-
-  questions_pretty = json.dumps(entry.get('questions', []), ensure_ascii=False, indent=2)
+    else:
+      entry = updated
 
   return render_template(
     'edit.html',
     entry=entry,
     index=index,
     image_url=build_image_url(entry.get('image', '')) if entry.get('image') else '',
-    questions=questions_pretty,
+    questions=entry.get('questions', []),
+    images=get_image_paths(),
     message=message,
     errors=errors,
   )

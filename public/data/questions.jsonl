@@ -1,3 +1,5 @@
-﻿{"image":"/images/sample-1.svg","description":"草地上的气球与树","questions":[{"text":"图片里有几只气球？","options":["2只","3只","4只"],"answer":1,"difficulty":2},{"text":"气球里有没有黄色？","options":["有","没有"],"answer":0,"difficulty":1}]}
-{"image":"/images/sample-2.svg","description":"桌上的水果与杯子","questions":[{"text":"桌上共有几个水果？","options":["2个","3个","4个"],"answer":1,"difficulty":2},{"text":"有没有看到橙色的水果？","options":["有","没有"],"answer":0,"difficulty":1}]}
-{"image":"/images/sample-3.svg","description":"夜空与小屋","questions":[{"text":"天空里有几颗星星？","options":["2颗","3颗","4颗"],"answer":2,"difficulty":3},{"text":"小屋的屋顶是什么颜色？","options":["红色","绿色","蓝色"],"answer":0,"difficulty":2}]}
+{"image": "/images/1.png", "description": "冰块上的企鹅", "questions": [{"text": "一共有几只企鹅手上有旗子？", "options": ["0只", "1只", "2只", "3只"], "answer": 2, "difficulty": 3}, {"text": "有多少只企鹅脖圈是红色的？", "options": ["3只", "4只", "5只", "6只"], "answer": 1, "difficulty": 2}]}
+{"image": "/images/2.png", "description": "草地上的圆滚滚猫咪", "questions": [{"text": "有几只橙色的猫咪？", "options": ["3只", "4只", "5只", "6只"], "answer": 2, "difficulty": 3}]}
+{"image": "/images/3.png", "description": "树枝上的猫头鹰", "questions": [{"text": "拿着铃铛的猫头鹰是", "options": ["闭着眼的", "睁着眼的"], "answer": 0, "difficulty": 4}]}
+{"image": "/images/4.png", "description": "围栏里的小羊", "questions": [{"text": "有多少只羊没有穿鞋子？", "options": ["4只", "5只", "6只", "7只"], "answer": 2, "difficulty": 5}]}
+{"image": "/images/5.png", "description": "湖面上的鸭子", "questions": [{"text": "有多少只鸭子戴了眼镜？", "options": ["2只", "3只", "4只", "5只"], "answer": 1, "difficulty": 2}]}
