@@ -1,0 +1,46 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>题库管理 - 记忆小花园</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <header class="top">
+      <div>
+        <h1>题库管理</h1>
+        <p>浏览、预览并维护题库内容。</p>
+      </div>
+      <form method="post" action="{{ url_for('create_entry') }}">
+        <button class="primary" type="submit">新增一条</button>
+      </form>
+    </header>
+
+    <main class="grid">
+      {% for entry in entries %}
+      <section class="card">
+        <div class="thumb">
+          {% if entry.image_url %}
+          <img src="{{ entry.image_url }}" alt="预览图片" />
+          {% else %}
+          <span>暂无图片</span>
+          {% endif %}
+        </div>
+        <div class="meta">
+          <h2>条目 {{ entry.index + 1 }}</h2>
+          <p>图片路径：{{ entry.image or '未填写' }}</p>
+          <p>描述：{{ entry.description or '未填写' }}</p>
+          <p>题目数量：{{ entry.question_count }}</p>
+        </div>
+        <a class="link" href="{{ url_for('edit_entry', index=entry.index) }}">编辑</a>
+      </section>
+      {% endfor %}
+      {% if not entries %}
+      <section class="card empty">
+        <p>题库还没有内容，请先新增一条。</p>
+      </section>
+      {% endif %}
+    </main>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <defs>
+    <linearGradient id="night" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#263b73" />
+      <stop offset="100%" stop-color="#10223e" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#night)" />
+  <rect y="340" width="800" height="160" fill="#1b2c4f" />
+  <polygon points="360,340 440,260 520,340" fill="#e56b6f" />
+  <rect x="370" y="340" width="140" height="110" fill="#f3c08f" />
+  <rect x="420" y="380" width="40" height="70" fill="#8c5a4c" />
+  <rect x="395" y="360" width="30" height="30" fill="#ffe8a6" />
+  <rect x="465" y="360" width="30" height="30" fill="#ffe8a6" />
+  <circle cx="150" cy="120" r="6" fill="#fff4b0" />
+  <circle cx="220" cy="80" r="6" fill="#fff4b0" />
+  <circle cx="300" cy="140" r="6" fill="#fff4b0" />
+  <circle cx="520" cy="90" r="6" fill="#fff4b0" />
+</svg>
