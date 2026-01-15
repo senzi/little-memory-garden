@@ -82,12 +82,21 @@ button {
   letter-spacing: 1px;
 }
 
+.tag-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
 .tag {
   background: #fff;
   padding: 8px 14px;
   border-radius: 999px;
   box-shadow: 0 6px 18px var(--shadow);
   font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
 }
 
 .panel {
@@ -275,6 +284,40 @@ button {
   color: #7a6e64;
 }
 
+.cache-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.cache-bar {
+  width: 120px;
+  height: 6px;
+  background: #efe2d5;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cache-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #f4bfa3, #f0a984);
+  width: 0%;
+  transition: width 0.2s ease;
+}
+
+.cache-bar.large {
+  width: min(320px, 80vw);
+  height: 10px;
+}
+
+.progress-text {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
 .feedback-text.good {
   color: #2f8b57;
 }
@@ -294,12 +337,20 @@ button {
   background: #fff8ef;
   border-radius: 18px;
   padding: 12px 16px;
-  font-size: 1rem;
+  font-size: clamp(0.95rem, 1.4vw, 1rem);
   box-shadow: 0 8px 18px var(--shadow);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   width: 100%;
   max-width: 280px;
+}
+
+.section.quiz {
+  gap: 12px;
+}
+
+.section.quiz h2 {
+  font-size: clamp(1.15rem, 2.2vw, 1.6rem);
 }
 
 .option:hover {
@@ -473,5 +524,44 @@ button {
 
   .options {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1180px) and (orientation: landscape) {
+  .page {
+    padding: 20px 18px 28px;
+  }
+  .panel {
+    padding: 18px;
+    min-height: calc(100vh - 140px);
+  }
+
+  .section {
+    gap: 12px;
+  }
+
+  .section h1 {
+    font-size: clamp(1.4rem, 2.2vw, 1.9rem);
+  }
+
+  .section h2 {
+    font-size: clamp(1.1rem, 2vw, 1.5rem);
+  }
+
+  .image-frame {
+    width: min(420px, 48vw);
+  }
+
+  .image-frame.small {
+    width: min(320px, 40vw);
+  }
+
+  .options {
+    gap: 10px;
+  }
+
+  .option {
+    max-width: 240px;
+    padding: 10px 12px;
   }
 }

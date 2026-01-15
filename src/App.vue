@@ -1,5 +1,5 @@
 ﻿<script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import HistoryPanel from './components/HistoryPanel.vue'
 
 const TOTAL_ROUNDS = 5
@@ -24,6 +24,12 @@ const correctCount = ref(0)
 const roundScores = ref([])
 const totalPossible = ref(0)
 const usedQuestions = ref({})
+const preload = ref({
+  active: false,
+  current: 0,
+  total: 0,
+  label: '',
+})
 const stats = ref({
   totalGames: 0,
   totalCorrect: 0,
@@ -54,6 +60,10 @@ const overallAccuracy = computed(() => {
   const rate = (stats.value.totalCorrect / stats.value.totalQuestions) * 100
   return `${Math.round(rate)}%`
 })
+const preloadPercent = computed(() => {
+  if (!preload.value.total) return 0
+  return Math.min(100, Math.round((preload.value.current / preload.value.total) * 100))
+})
 const bankImageCount = computed(() => bank.value.length)
 const bankQuestionCount = computed(() =>
   bank.value.reduce((sum, entry) => sum + (entry.questions ? entry.questions.length : 0), 0)
@@ -77,6 +87,31 @@ const shuffle = (list) => {
     ;[result[i], result[j]] = [result[j], result[i]]
   }
   return result
+}
+
+const preloadImages = (images, onProgress) => {
+  const unique = Array.from(new Set(images.filter(Boolean)))
+  let loaded = 0
+  onProgress(loaded, unique.length)
+  return Promise.all(
+    unique.map(
+      (src) =>
+        new Promise((resolve) => {
+          const img = new Image()
+          img.onload = () => {
+            loaded += 1
+            onProgress(loaded, unique.length)
+            resolve()
+          }
+          img.onerror = () => {
+            loaded += 1
+            onProgress(loaded, unique.length)
+            resolve()
+          }
+          img.src = src
+        })
+    )
+  )
 }
 
 const parseBank = (text) => {
@@ -216,7 +251,7 @@ const prepareRound = () => {
   isCorrect.value = false
 }
 
-const startGame = () => {
+const startGame = async () => {
   if (!canStart.value) return
   rounds.value = buildRounds()
   currentRoundIndex.value = 0
@@ -224,7 +259,15 @@ const startGame = () => {
   correctCount.value = 0
   roundScores.value = []
   totalPossible.value = 0
-  usedQuestions.value = {}
+  state.value = 'preload'
+  preload.value = { active: true, current: 0, total: 0, label: '正在加载本局图片' }
+  await preloadImages(
+    rounds.value.map((entry) => entry.image),
+    (current, total) => {
+      preload.value = { ...preload.value, current, total }
+    }
+  )
+  preload.value = { ...preload.value, active: false }
   prepareRound()
   state.value = 'ready'
 }
@@ -298,6 +341,18 @@ const backToStart = () => {
   state.value = 'start'
 }
 
+const startCacheAll = async () => {
+  if (!bank.value.length) return
+  preload.value = { active: true, current: 0, total: 0, label: '正在缓存全部素材' }
+  await preloadImages(
+    bank.value.map((entry) => entry.image),
+    (current, total) => {
+      preload.value = { ...preload.value, current, total }
+    }
+  )
+  preload.value = { ...preload.value, active: false }
+}
+
 onMounted(() => {
   loadStats()
   try {
@@ -314,6 +369,11 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clearTimers()
+  document.body.style.overflow = ''
+})
+
+watch(state, (next) => {
+  document.body.style.overflow = next === 'quiz' ? 'hidden' : ''
 })
 </script>
 
@@ -321,7 +381,15 @@ onBeforeUnmount(() => {
   <div class="page">
     <header class="topbar">
       <div class="brand">记忆小花园</div>
-      <div class="tag">离线专注训练</div>
+      <div class="tag-wrap">
+        <button class="tag" type="button" @click="startCacheAll">离线专注训练</button>
+        <div v-if="preload.active && preload.label === '正在缓存全部素材'" class="cache-inline">
+          <div class="cache-bar">
+            <span :style="{ width: `${preloadPercent}%` }"></span>
+          </div>
+          <em>{{ preloadPercent }}%</em>
+        </div>
+      </div>
     </header>
 
     <main class="panel">
@@ -376,6 +444,15 @@ onBeforeUnmount(() => {
           <button class="primary" @click="startGame">开始游戏</button>
           <button class="ghost" @click="openHistory">查看记录</button>
         </div>
+      </section>
+
+      <section v-else-if="state === 'preload'" class="section preload">
+        <h1>正在加载本局图片</h1>
+        <p>稍等一下，图片准备好就开始。</p>
+        <div class="cache-bar large">
+          <span :style="{ width: `${preloadPercent}%` }"></span>
+        </div>
+        <em class="progress-text">{{ preload.current }} / {{ preload.total }}</em>
       </section>
 
       <section v-else-if="state === 'ready'" class="section fade">
